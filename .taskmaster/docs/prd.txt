@@ -1,0 +1,181 @@
+Sure! Below is a **detailed Product Requirements Document (PRD)** for a product like **[Resume-Now.com](https://www.resume-now.com/)**, based on its publicly available features and user flow.
+
+---
+
+# 📄 Product Requirements Document (PRD)
+
+### Product Name:
+
+**Resume Builder Platform – The-Mastery\.org**
+
+## Theme Toggle
+- Toggle between **Light Mode** and **Dark Mode**
+
+---
+
+## 1. **Purpose**
+
+To provide job seekers with a fast, intuitive, and customizable platform to build professional, ATS-compliant resumes and cover letters using AI-enhanced guidance, industry-specific templates, and career-focused suggestions.
+
+---
+
+## 2. **Scope**
+
+This platform will allow users to:
+
+* Create, edit, and manage resumes
+* Generate cover letters based on resumes
+* Export documents in PDF/Word formats
+* Receive resume tips and AI-powered suggestions
+* Store multiple versions
+* Optionally subscribe for full feature access
+
+---
+
+## 3. **Target Users / Personas**
+
+| Persona                        | Description                                 |
+| ------------------------------ | ------------------------------------------- |
+| **Entry-Level Job Seeker**     | Looking for the first job, needs guidance   |
+| **Experienced Professional**   | Mid-career individual updating resume       |
+| **Career Switcher**            | Moving to a new industry                    |
+| **Frequent Job Applicant**     | Applies often, needs multiple versions      |
+| **Non-native English Speaker** | Needs grammar/style help via AI suggestions |
+
+---
+
+## 4. **Key Features & Functional Requirements**
+
+### 4.1 Resume Builder
+
+| Feature                            | Description                                                                            |
+| ---------------------------------- | -------------------------------------------------------------------------------------- |
+| **Step-by-Step Resume Creation**   | UI guides users through sections: Contact Info, Summary, Experience, Education, Skills |
+| **Template Selection**             | Choose from modern, traditional, or creative resume templates                          |
+| **Pre-written Bullet Suggestions** | Based on job title or industry                                                         |
+| **Dynamic Formatting**             | Adjust font, margins, spacing to fit content                                           |
+| **Live Preview**                   | Real-time updates as user edits                                                        |
+| **ATS Optimization Tips**          | Highlights potential red flags for applicant tracking systems                          |
+| **Section Reordering**             | Drag-and-drop sections based on importance                                             |
+| **Multi-version Management**       | Create and manage multiple resume versions for different job types                     |
+
+### 4.2 Cover Letter Generator
+
+| Feature                      | Description                                                   |
+| ---------------------------- | ------------------------------------------------------------- |
+| **Autofill Based on Resume** | Uses resume info to generate personalized cover letter        |
+| **Template Styles**          | Matching styles to resume templates                           |
+| **Customization**            | Edit letter content, tone, and format                         |
+| **Suggestions**              | AI-based tips for stronger openings, closings, and highlights |
+
+### 4.3 Account & Subscription System
+
+| Feature                          | Description                                                  |
+| -------------------------------- | ------------------------------------------------------------ |
+| **Guest Access**                 | Start without account, prompt to save                        |
+| **Account Registration/Login**   | Email/password or Google login                               |
+| **Subscription Plans**           | Free trial (limited exports), premium plans (monthly/yearly) |
+| **Payment Gateway**              | Stripe or PayPal integration                                 |
+| **Trial-to-Paid Flow**           | Smart nudges to upgrade after resume creation                |
+| **Cancel & Resume Subscription** | Self-serve via dashboard                                     |
+
+### 4.4 Document Export
+
+| Feature                            | Description                                                 |
+| ---------------------------------- | ----------------------------------------------------------- |
+| **Download Formats**               | PDF, DOCX                                                   |
+| **Download Limits (Free vs Paid)** | Free trial may allow 1 download; paid plan offers unlimited |
+| **Watermark Removal**              | Only for paid users                                         |
+
+### 4.5 AI Assistance
+
+| Feature                 | Description                                         |
+| ----------------------- | --------------------------------------------------- |
+| **Skill Suggestions**   | Based on job title or previous experience           |
+| **Experience Enhancer** | Turns basic tasks into action-based bullet points   |
+| **Grammar Fixes**       | Inline grammar checker and suggestions              |
+| **Tone Adjuster**       | Choose from professional, friendly, assertive tones |
+
+---
+
+## 5. **Non-Functional Requirements**
+
+| Category                  | Details                                |
+| ------------------------- | -------------------------------------- |
+| **Performance**           | Pages must load within 2 seconds       |
+| **Mobile Support**        | Fully responsive design                |
+| **Accessibility**         | WCAG 2.1 compliance                    |
+| **Security**              | HTTPS, data encryption, GDPR compliant |
+| **Scalability**           | Support for 1M+ concurrent users       |
+| **Browser Compatibility** | Chrome, Firefox, Edge, Safari          |
+
+---
+
+## 6. **User Flows**
+
+### A. Resume Creation Flow
+
+1. User lands on homepage
+2. Clicks “Build My Resume”
+3. Chooses a template
+4. Fills out step-by-step form (Contact > Experience > Education > Skills)
+5. Sees live preview
+6. Clicks “Download” → prompted to sign up or log in
+7. Final download triggered after subscription or free trial confirmation
+
+### B. Cover Letter Flow
+
+1. From dashboard, user selects “Create Cover Letter”
+2. Resume data is pulled in
+3. User customizes fields
+4. Letter is generated
+5. User reviews, edits, and downloads
+
+---
+
+## 7. **Success Metrics / KPIs**
+
+| Metric                      | Target      |
+| --------------------------- | ----------- |
+| Resume completion rate      | ≥ 75%       |
+| Conversion rate to paid     | ≥ 8%        |
+| User retention after 7 days | ≥ 35%       |
+| Time to first resume        | ≤ 5 minutes |
+| Resume downloads per user   | ≥ 2         |
+
+---
+
+## 8. **Constraints**
+
+* Certain premium features gated behind paywall
+* Resume download requires signup
+* Cover letter tool not accessible without resume creation
+* High reliance on structured form input (limiting free-form entry)
+
+---
+
+## 9. **Tech Stack Suggestion**
+
+| Layer       | Technology                                  |
+| ----------- | ------------------------------------------- |
+| Frontend    | React / Next.js, Tailwind CSS               |
+| Backend     | Node.js + Express or Django                 |
+| AI Features | GPT-powered backend API for text generation |
+| Database    | PostgreSQL or MongoDB                       |
+| Hosting     | AWS / Vercel                                |
+| Payments    | Stripe, PayPal                              |
+| Analytics   | Google Analytics, Hotjar                    |
+| A/B Testing | Optimizely or VWO                           |
+
+---
+
+## 10. **Risks & Mitigations**
+
+| Risk                     | Mitigation                                           |
+| ------------------------ | ---------------------------------------------------- |
+| High drop-off at signup  | Delay signup prompt until download step              |
+| Resume quality concerns  | Improve AI-generated suggestions                     |
+| GDPR violations          | Implement proper cookie consent & data erasure tools |
+| Payment failure handling | Grace period & retry mechanisms                      |
+
+---

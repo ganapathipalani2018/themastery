@@ -1,0 +1,20 @@
+# Task ID: 5
+# Title: Develop Resume Builder Core Functionality
+# Status: pending
+# Dependencies: 1, 3, 4
+# Priority: high
+# Description: Implement the step-by-step resume creation flow with sections for Contact Info, Summary, Experience, Education, and Skills. Create a dynamic form system with validation and real-time preview.
+# Details:
+1. Design database schema for resumes with sections and fields
+2. Create multi-step form wizard with progress tracking
+3. Implement Contact Info section with validation
+4. Create Professional Summary section with AI suggestion integration
+5. Implement Work Experience section with ability to add multiple entries
+6. Create Education section with degree/certification options
+7. Implement Skills section with categorization and proficiency levels
+8. Create Additional Sections (Awards, Certifications, Languages, etc.)
+9. Implement section reordering with drag-and-drop
+10. Create resume data validation and completion percentage calculation
+
+# Test Strategy:
+Unit tests for form validation logic. Integration tests for multi-step form flow. Test data persistence between steps. Verify drag-and-drop functionality works correctly. Test form submission with various data combinations.

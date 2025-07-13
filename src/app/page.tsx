@@ -1,4 +1,6 @@
+"use client";
 import Image from "next/image";
+import { useState } from "react";
 
 export default function Home() {
   return (
@@ -24,6 +26,14 @@ export default function Home() {
             Save and see your changes instantly.
           </li>
         </ol>
+
+        {/* Tailwind CSS Test Button */}
+        <button className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition-colors">
+          Tailwind Test Button
+        </button>
+
+        {/* Backend Health Check Button */}
+        <BackendHealthCheck />
 
         <div className="flex gap-4 items-center flex-col sm:flex-row">
           <a
@@ -98,6 +108,46 @@ export default function Home() {
           Go to nextjs.org →
         </a>
       </footer>
+    </div>
+  );
+}
+
+function BackendHealthCheck() {
+  const [result, setResult] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const checkHealth = async () => {
+    setLoading(true);
+    setError(null);
+    setResult(null);
+    try {
+      const res = await fetch("http://localhost:3001/health");
+      if (!res.ok) throw new Error(`Status ${res.status}`);
+      const data = await res.json();
+      setResult(JSON.stringify(data));
+    } catch (err: any) {
+      setError(err.message || "Unknown error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="mt-4 flex flex-col items-center">
+      <button
+        className="px-6 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition-colors"
+        onClick={checkHealth}
+        disabled={loading}
+      >
+        {loading ? "Checking..." : "Check Backend Health"}
+      </button>
+      {result && (
+        <div className="mt-2 text-green-700">Backend says: {result}</div>
+      )}
+      {error && (
+        <div className="mt-2 text-red-600">Error: {error}</div>
+      )}
     </div>
   );
 }
