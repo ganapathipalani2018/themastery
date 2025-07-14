@@ -8,6 +8,12 @@ import {
   resetPassword,
   getProfile
 } from '../controllers/authController';
+import {
+  initiateGoogleOAuth,
+  handleGoogleOAuthCallback,
+  linkGoogleAccount,
+  unlinkGoogleAccount
+} from '../controllers/oauthController';
 import { authenticateToken } from '../middleware/auth';
 
 // Security middleware
@@ -114,6 +120,51 @@ router.post('/reset-password',
 router.get('/profile', 
   authenticateToken, 
   getProfile
+);
+
+/**
+ * @route   GET /api/auth/oauth/google
+ * @desc    Initiate Google OAuth flow
+ * @access  Public
+ * @security Rate limited to 5 requests per 15 minutes
+ */
+router.get('/oauth/google', 
+  authRateLimit,
+  initiateGoogleOAuth
+);
+
+/**
+ * @route   GET /api/auth/oauth/google/callback
+ * @desc    Handle Google OAuth callback
+ * @access  Public
+ * @security Rate limited to 5 requests per 15 minutes
+ */
+router.get('/oauth/google/callback', 
+  authRateLimit,
+  handleGoogleOAuthCallback
+);
+
+/**
+ * @route   POST /api/auth/link-google
+ * @desc    Link Google account to existing user
+ * @access  Public
+ * @security Rate limited to 5 requests per 15 minutes
+ * @validation Body validated against linkGoogleAccountSchema
+ */
+router.post('/link-google', 
+  authRateLimit,
+  linkGoogleAccount
+);
+
+/**
+ * @route   DELETE /api/auth/unlink-google
+ * @desc    Unlink Google account from user
+ * @access  Private
+ * @security Requires valid JWT token
+ */
+router.delete('/unlink-google', 
+  authenticateToken,
+  unlinkGoogleAccount
 );
 
 export default router; 

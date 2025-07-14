@@ -62,6 +62,11 @@ const envSchema = z.object({
   EMAIL_PASSWORD: z.string().optional(),
   EMAIL_FROM: z.string().optional(),
   
+  // Google OAuth Configuration
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+  GOOGLE_REDIRECT_URI: z.string().optional(),
+  
   // File Upload
   MAX_FILE_SIZE: z.string().transform(Number).default(5242880), // 5MB
   UPLOAD_DIR: z.string().default('./uploads'),
@@ -138,6 +143,13 @@ export const rateLimitConfig = {
   maxRequests: config.RATE_LIMIT_MAX_REQUESTS,
   authMaxRequests: config.AUTH_RATE_LIMIT_MAX_REQUESTS,
   passwordResetMaxRequests: config.PASSWORD_RESET_RATE_LIMIT_MAX_REQUESTS,
+};
+
+// Google OAuth configuration
+export const googleOAuthConfig = {
+  clientId: config.GOOGLE_CLIENT_ID,
+  clientSecret: config.GOOGLE_CLIENT_SECRET,
+  redirectUri: config.GOOGLE_REDIRECT_URI,
 };
 
 // Feature flags

@@ -121,6 +121,78 @@ export class UserRepository {
     return (result.rowCount || 0) > 0;
   }
 
+  async findByGoogleId(googleId: string): Promise<User | null> {
+    const query = 'SELECT * FROM users WHERE google_id = $1';
+    const result = await this.db.query(query, [googleId]);
+    return result.rows[0] || null;
+  }
+
+  async createOAuthUser(userData: {
+    email: string;
+    first_name: string;
+    last_name: string;
+    google_id: string;
+    profile_picture_url?: string;
+    google_refresh_token?: string;
+  }): Promise<User> {
+    const query = `
+      INSERT INTO users (email, first_name, last_name, google_id, profile_picture_url, google_refresh_token, is_verified, account_status, subscription_status)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      RETURNING *
+    `;
+    
+    const values = [
+      userData.email,
+      userData.first_name,
+      userData.last_name,
+      userData.google_id,
+      userData.profile_picture_url || null,
+      userData.google_refresh_token || null,
+      true, // OAuth users are automatically verified
+      'active',
+      'free'
+    ];
+
+    const result = await this.db.query(query, values);
+    return result.rows[0];
+  }
+
+  async linkGoogleAccount(userId: string, googleId: string, refreshToken?: string): Promise<User | null> {
+    const query = `
+      UPDATE users 
+      SET google_id = $1, google_refresh_token = $2, is_verified = true
+      WHERE id = $3
+      RETURNING *
+    `;
+    
+    const result = await this.db.query(query, [googleId, refreshToken || null, userId]);
+    return result.rows[0] || null;
+  }
+
+  async updateLastLogin(id: string): Promise<boolean> {
+    const query = `
+      UPDATE users 
+      SET last_login = CURRENT_TIMESTAMP
+      WHERE id = $1
+      RETURNING id
+    `;
+    
+    const result = await this.db.query(query, [id]);
+    return (result.rowCount || 0) > 0;
+  }
+
+  async updateGoogleRefreshToken(id: string, refreshToken: string): Promise<boolean> {
+    const query = `
+      UPDATE users 
+      SET google_refresh_token = $1
+      WHERE id = $2
+      RETURNING id
+    `;
+    
+    const result = await this.db.query(query, [refreshToken, id]);
+    return (result.rowCount || 0) > 0;
+  }
+
   // Convert User to UserResponse (removes sensitive fields)
   toUserResponse(user: User): UserResponse {
     return {
