@@ -1,13 +1,19 @@
+// Initialize Sentry before any other imports
+import { initSentry } from './config/sentry';
+initSentry();
+
 import express from 'express';
 import { config } from './config/environment';
 import logger from './config/logger';
 import { httpLogger } from './middleware/logging';
 import { securityHeaders, corsOptions, helmetOptions, requestSizeLimits, sanitizeInput, sqlInjectionProtection, xssProtection } from './middleware/security';
+import { sentryUserContext, sentryErrorHandler, sentryPerformanceMiddleware, sentryErrorHandlerMiddleware } from './middleware/sentry';
 import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import authRoutes from './routes/auth';
 import healthRoutes from './routes/health';
+import monitoringRoutes from './routes/monitoring';
 import { errorLogger } from './middleware/logging';
 import { Request, Response } from 'express';
 
@@ -18,6 +24,7 @@ const app = express();
 const PORT = config.PORT;
 
 app.use(httpLogger);
+app.use(sentryPerformanceMiddleware);
 app.use(securityHeaders);
 app.use(cors(corsOptions));
 app.use(helmet(helmetOptions));
@@ -27,9 +34,13 @@ app.use(cookieParser());
 app.use(sanitizeInput);
 app.use(sqlInjectionProtection);
 app.use(xssProtection);
+app.use(sentryUserContext);
 
 // Health check endpoints (before authentication)
 app.use('/health', healthRoutes);
+
+// Monitoring endpoints (requires authentication)
+app.use('/api/monitoring', monitoringRoutes);
 
 // API routes
 app.use('/api/auth', authRoutes);
@@ -41,6 +52,7 @@ app.get('/api', (req, res) => {
     version: '1.0.0',
     endpoints: {
       auth: '/api/auth',
+      monitoring: '/api/monitoring',
       health: '/health'
     },
     documentation: 'Coming soon...'
@@ -53,6 +65,10 @@ app.get('/test', (req, res) => {
 
 // Error logging middleware (before global error handler)
 app.use(errorLogger);
+
+// Sentry error handler (must be before other error handlers)
+app.use(sentryErrorHandler);
+app.use(sentryErrorHandlerMiddleware);
 
 // Catch-all route for undefined endpoints (must be last)
 app.use((req, res) => {
