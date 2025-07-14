@@ -29,7 +29,7 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     const decoded = verifyAccessToken(token);
     req.user = decoded;
     next();
-  } catch (error) {
+  } catch {
     res.status(401).json({
       success: false,
       message: 'Invalid or expired token',
@@ -74,7 +74,7 @@ export const optionalAuth = (req: Request, res: Response, next: NextFunction): v
       const decoded = verifyAccessToken(token);
       req.user = decoded;
     }
-  } catch (error) {
+  } catch {
     // Silently ignore invalid tokens for optional auth
   }
   

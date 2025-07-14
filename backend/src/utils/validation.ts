@@ -40,7 +40,7 @@ export const registerSchema = z.object({
   confirmPassword: z.string()
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
-  path: ["confirmPassword"],
+  path: ['confirmPassword'],
 });
 
 export const loginSchema = z.object({
@@ -58,7 +58,7 @@ export const resetPasswordSchema = z.object({
   confirmPassword: z.string()
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
-  path: ["confirmPassword"],
+  path: ['confirmPassword'],
 });
 
 export const refreshTokenSchema = z.object({
@@ -91,11 +91,11 @@ export const workExperienceSchema = z.object({
   description: z.string().max(2000, 'Description must be less than 2000 characters').optional(),
   location: z.string().max(200, 'Location must be less than 200 characters').optional()
 }).refine((data) => {
-  if (data.current) return true;
+  if (data.current) {return true;}
   return data.endDate !== undefined;
 }, {
-  message: "End date is required when current is false",
-  path: ["endDate"],
+  message: 'End date is required when current is false',
+  path: ['endDate'],
 });
 
 export const educationSchema = z.object({

@@ -87,7 +87,7 @@ function validateEnvironment() {
       error.issues.forEach((issue: z.ZodIssue) => {
         console.error(`  ${issue.path.join('.')}: ${issue.message}`);
       });
-      process.exit(1);
+      throw new Error('Environment validation failed.');
     }
     throw error;
   }
@@ -188,7 +188,7 @@ export function validateProductionSecrets() {
     if (missingSecrets.length > 0) {
       console.error('Missing or default production secrets:');
       missingSecrets.forEach(secret => console.error(`  ${secret}`));
-      process.exit(1);
+      throw new Error('Missing or default production secrets.');
     }
   }
 }

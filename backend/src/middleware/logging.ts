@@ -13,7 +13,7 @@ morgan.token('request-id', (req: Request) => {
 });
 
 // Custom token for response time in milliseconds
-morgan.token('response-time-ms', (req: Request, res: Response) => {
+morgan.token('response-time-ms', (req: Request) => {
   const startTime = (req as any).startTime;
   if (startTime) {
     return `${Date.now() - startTime}ms`;
@@ -42,7 +42,7 @@ const morganStream = {
     try {
       const logData = JSON.parse(message.trim());
       logger.info('HTTP Request', logData);
-    } catch (error) {
+    } catch {
       // Fallback to plain text if JSON parsing fails
       logger.info('HTTP Request', { message: message.trim() });
     }
@@ -52,7 +52,7 @@ const morganStream = {
 // Morgan middleware for HTTP request logging
 export const httpLogger = morgan(morganFormat, {
   stream: morganStream,
-  skip: (req: Request, res: Response) => {
+  skip: (req: Request) => {
     // Skip logging for health check endpoints in production
     if (req.url === '/health' || req.url === '/api/health') {
       return process.env.NODE_ENV === 'production';

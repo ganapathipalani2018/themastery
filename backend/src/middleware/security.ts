@@ -1,8 +1,5 @@
 import rateLimit from 'express-rate-limit';
 import slowDown from 'express-slow-down';
-import helmet from 'helmet';
-import cors from 'cors';
-import cookieParser from 'cookie-parser';
 import mongoSanitize from 'express-mongo-sanitize';
 import hpp from 'hpp';
 import { Request, Response, NextFunction } from 'express';
@@ -15,7 +12,9 @@ const isProduction = process.env.NODE_ENV === 'production';
 export const corsOptions = {
   origin: function (origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) {
     // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
+    if (!origin) {
+      return callback(null, true);
+    }
     
     const allowedOrigins = [
       'http://localhost:3000', // Frontend development
@@ -33,9 +32,9 @@ export const corsOptions = {
     }
 
     if (allowedOrigins.includes(origin)) {
-      callback(null, true);
+      return callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'), false);
+      return callback(new Error('Not allowed by CORS'), false);
     }
   },
   credentials: true,
@@ -58,11 +57,11 @@ export const helmetOptions = {
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "https:"],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+      imgSrc: ["'self'", 'data:', 'https:'],
       scriptSrc: ["'self'"],
-      connectSrc: ["'self'", "https://api.your-domain.com"],
+      connectSrc: ["'self'", 'https://api.your-domain.com'],
       frameSrc: ["'none'"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
@@ -268,8 +267,12 @@ export const xssProtection = (req: Request, res: Response, next: NextFunction) =
   };
 
   // Sanitize query parameters and body
-  if (req.query) sanitizeObject(req.query);
-  if (req.body) sanitizeObject(req.body);
+  if (req.query) {
+    sanitizeObject(req.query);
+  }
+  if (req.body) {
+    sanitizeObject(req.body);
+  }
 
   next();
 };

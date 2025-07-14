@@ -1,15 +1,15 @@
-import express from "express";
-import { config } from "./config/environment";
-import logger from "./config/logger";
-import { httpLogger } from "./middleware/logging";
-import { securityHeaders, corsOptions, helmetOptions, requestSizeLimits, sanitizeInput, sqlInjectionProtection, xssProtection } from "./middleware/security";
-import cors from "cors";
-import helmet from "helmet";
-import cookieParser from "cookie-parser";
-import authRoutes from "./routes/auth";
-import healthRoutes from "./routes/health";
-import { errorLogger } from "./middleware/logging";
-import { Request, Response, NextFunction } from "express";
+import express from 'express';
+import { config } from './config/environment';
+import logger from './config/logger';
+import { httpLogger } from './middleware/logging';
+import { securityHeaders, corsOptions, helmetOptions, requestSizeLimits, sanitizeInput, sqlInjectionProtection, xssProtection } from './middleware/security';
+import cors from 'cors';
+import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
+import authRoutes from './routes/auth';
+import healthRoutes from './routes/health';
+import { errorLogger } from './middleware/logging';
+import { Request, Response } from 'express';
 
 console.log('Starting backend/src/index.ts');
 console.log('Loaded config:', config);
@@ -29,21 +29,21 @@ app.use(sqlInjectionProtection);
 app.use(xssProtection);
 
 // Health check endpoints (before authentication)
-app.use("/health", healthRoutes);
+app.use('/health', healthRoutes);
 
 // API routes
-app.use("/api/auth", authRoutes);
+app.use('/api/auth', authRoutes);
 
 // API documentation route
-app.get("/api", (req, res) => {
+app.get('/api', (req, res) => {
   res.json({
-    message: "Resume Builder API",
-    version: "1.0.0",
+    message: 'Resume Builder API',
+    version: '1.0.0',
     endpoints: {
-      auth: "/api/auth",
-      health: "/health"
+      auth: '/api/auth',
+      health: '/health'
     },
-    documentation: "Coming soon..."
+    documentation: 'Coming soon...'
   });
 });
 
@@ -58,8 +58,8 @@ app.use(errorLogger);
 app.use((req, res) => {
   res.status(404).json({
     success: false,
-    error: "ENDPOINT_NOT_FOUND",
-    message: "The requested endpoint was not found",
+    error: 'ENDPOINT_NOT_FOUND',
+    message: 'The requested endpoint was not found',
     path: req.originalUrl,
     method: req.method,
     timestamp: new Date().toISOString()
@@ -67,7 +67,7 @@ app.use((req, res) => {
 });
 
 // Global error handler
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+app.use((err: any, req: Request, res: Response) => {
   const isDevelopment = process.env.NODE_ENV === 'development';
   if (err.name === 'ValidationError') {
     return res.status(400).json({
@@ -91,7 +91,7 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
       message: 'File size exceeds limit'
     });
   }
-  res.status(err.status || 500).json({
+  return res.status(err.status || 500).json({
     success: false,
     error: err.code || 'SERVER_ERROR',
     message: isDevelopment ? err.message : 'Internal server error',

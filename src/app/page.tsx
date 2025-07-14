@@ -1,6 +1,6 @@
-"use client";
-import Image from "next/image";
-import { useState } from "react";
+'use client';
+import Image from 'next/image';
+import { useState } from 'react';
 
 export default function Home() {
   return (
@@ -16,7 +16,7 @@ export default function Home() {
         />
         <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
           <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
+            Get started by editing{' '}
             <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
               src/app/page.tsx
             </code>
@@ -122,12 +122,12 @@ function BackendHealthCheck() {
     setError(null);
     setResult(null);
     try {
-      const res = await fetch("http://localhost:3001/health");
+      const res = await fetch('http://localhost:3001/health');
       if (!res.ok) throw new Error(`Status ${res.status}`);
       const data = await res.json();
       setResult(JSON.stringify(data));
     } catch (err: any) {
-      setError(err.message || "Unknown error");
+      setError(err.message || 'Unknown error');
     } finally {
       setLoading(false);
     }
@@ -140,7 +140,7 @@ function BackendHealthCheck() {
         onClick={checkHealth}
         disabled={loading}
       >
-        {loading ? "Checking..." : "Check Backend Health"}
+        {loading ? 'Checking...' : 'Check Backend Health'}
       </button>
       {result && (
         <div className="mt-2 text-green-700">Backend says: {result}</div>

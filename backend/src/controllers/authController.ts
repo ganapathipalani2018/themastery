@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import { UserRepository } from '../repositories/UserRepository';
 import { hashPassword, verifyPassword, validatePasswordStrength } from '../utils/password';
 import { generateTokenPair, verifyRefreshToken, generateAccessToken } from '../utils/jwt';
-import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 
 const userRepository = new UserRepository();
@@ -85,9 +84,6 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     // Hash password
     const hashedPassword = await hashPassword(password);
-
-    // Generate verification token
-    const verificationToken = crypto.randomBytes(32).toString('hex');
 
     // Create user
     const newUser = await userRepository.createUser({
