@@ -1,0 +1,127 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  backend-ci:
+    name: Backend CI/CD
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18, 20]
+    
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_resumebuilder
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+          
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-backend-node-${{ hashFiles('backend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-backend-node-
+            
+      - name: Install dependencies
+        working-directory: ./backend
+        run: npm ci
+        
+      - name: Run ESLint
+        working-directory: ./backend
+        run: npm run lint
+        
+      - name: Run TypeScript type check
+        working-directory: ./backend
+        run: npx tsc --noEmit
+        
+      - name: Wait for PostgreSQL
+        run: |
+          until pg_isready -h localhost -p 5432 -U test_user; do
+            echo "Waiting for postgres..."
+            sleep 2
+          done
+        
+      - name: Setup test database
+        run: |
+          PGPASSWORD=test_password psql -h localhost -U test_user -d test_resumebuilder -f database.sql
+        
+      - name: Run tests
+        working-directory: ./backend
+        run: npm run test:ci
+        env:
+          CI: true
+          NODE_ENV: test
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USER: test_user
+          DB_PASSWORD: test_password
+          DB_NAME: test_resumebuilder
+          JWT_SECRET: test_jwt_secret_key_for_ci
+          JWT_REFRESH_SECRET: test_jwt_refresh_secret_key_for_ci
+          
+      - name: Build application
+        working-directory: ./backend
+        run: npm run build
+        env:
+          NODE_ENV: production
+          
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        if: matrix.node-version == 18
+        with:
+          name: backend-build
+          path: backend/dist/
+          retention-days: 1
+          
+      - name: Run security audit
+        working-directory: ./backend
+        run: npm audit --audit-level high
+        continue-on-error: true
+        
+      - name: Test database connectivity
+        working-directory: ./backend
+        run: npm run test:db
+        env:
+          NODE_ENV: test
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USER: test_user
+          DB_PASSWORD: test_password
+          DB_NAME: test_resumebuilder
+        continue-on-error: true 
