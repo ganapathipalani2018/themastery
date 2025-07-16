@@ -5,6 +5,7 @@ import { UserRepository } from '../repositories/UserRepository';
 import { generateTokenPair } from '../utils/jwt';
 import logger from '../config/logger';
 import { GoogleOAuthRequest } from '../models/User';
+import fetch from 'node-fetch';
 
 // Extend Request interface to include session
 declare global {

@@ -91,6 +91,14 @@ class UserRepository {
         const result = await this.db.query(query, [token, expires, email]);
         return (result.rowCount || 0) > 0;
     }
+    async findByResetToken(token) {
+        const query = `
+      SELECT * FROM users 
+      WHERE reset_password_token = $1 AND reset_password_expires > NOW()
+    `;
+        const result = await this.db.query(query, [token]);
+        return result.rows[0] || null;
+    }
     async resetPassword(token, newPasswordHash) {
         const query = `
       UPDATE users 
@@ -99,6 +107,61 @@ class UserRepository {
       RETURNING id
     `;
         const result = await this.db.query(query, [newPasswordHash, token]);
+        return (result.rowCount || 0) > 0;
+    }
+    async findByGoogleId(googleId) {
+        const query = 'SELECT * FROM users WHERE google_id = $1';
+        const result = await this.db.query(query, [googleId]);
+        return result.rows[0] || null;
+    }
+    async createOAuthUser(userData) {
+        const query = `
+      INSERT INTO users (email, first_name, last_name, google_id, profile_picture_url, google_refresh_token, is_verified, account_status, subscription_status)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      RETURNING *
+    `;
+        const values = [
+            userData.email,
+            userData.first_name,
+            userData.last_name,
+            userData.google_id,
+            userData.profile_picture_url || null,
+            userData.google_refresh_token || null,
+            true, // OAuth users are automatically verified
+            'active',
+            'free'
+        ];
+        const result = await this.db.query(query, values);
+        return result.rows[0];
+    }
+    async linkGoogleAccount(userId, googleId, refreshToken) {
+        const query = `
+      UPDATE users 
+      SET google_id = $1, google_refresh_token = $2, is_verified = true
+      WHERE id = $3
+      RETURNING *
+    `;
+        const result = await this.db.query(query, [googleId, refreshToken || null, userId]);
+        return result.rows[0] || null;
+    }
+    async updateLastLogin(id) {
+        const query = `
+      UPDATE users 
+      SET last_login = CURRENT_TIMESTAMP
+      WHERE id = $1
+      RETURNING id
+    `;
+        const result = await this.db.query(query, [id]);
+        return (result.rowCount || 0) > 0;
+    }
+    async updateGoogleRefreshToken(id, refreshToken) {
+        const query = `
+      UPDATE users 
+      SET google_refresh_token = $1
+      WHERE id = $2
+      RETURNING id
+    `;
+        const result = await this.db.query(query, [refreshToken, id]);
         return (result.rowCount || 0) > 0;
     }
     // Convert User to UserResponse (removes sensitive fields)
@@ -110,6 +173,10 @@ class UserRepository {
             last_name: user.last_name,
             profile_picture_url: user.profile_picture_url,
             is_verified: user.is_verified,
+            google_id: user.google_id,
+            last_login: user.last_login,
+            account_status: user.account_status,
+            subscription_status: user.subscription_status,
             created_at: user.created_at,
             updated_at: user.updated_at
         };

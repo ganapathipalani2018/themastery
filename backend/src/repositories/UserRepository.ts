@@ -109,6 +109,16 @@ export class UserRepository {
     return (result.rowCount || 0) > 0;
   }
 
+  async findByResetToken(token: string): Promise<User | null> {
+    const query = `
+      SELECT * FROM users 
+      WHERE reset_password_token = $1 AND reset_password_expires > NOW()
+    `;
+    
+    const result = await this.db.query(query, [token]);
+    return result.rows[0] || null;
+  }
+
   async resetPassword(token: string, newPasswordHash: string): Promise<boolean> {
     const query = `
       UPDATE users 
@@ -202,6 +212,10 @@ export class UserRepository {
       last_name: user.last_name,
       profile_picture_url: user.profile_picture_url,
       is_verified: user.is_verified,
+      google_id: user.google_id,
+      last_login: user.last_login,
+      account_status: user.account_status,
+      subscription_status: user.subscription_status,
       created_at: user.created_at,
       updated_at: user.updated_at
     };

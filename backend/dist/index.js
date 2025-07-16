@@ -16,9 +16,12 @@ const cors_1 = __importDefault(require("cors"));
 const helmet_1 = __importDefault(require("helmet"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const auth_1 = __importDefault(require("./routes/auth"));
+const sessions_1 = __importDefault(require("./routes/sessions"));
+const users_1 = __importDefault(require("./routes/users"));
 const health_1 = __importDefault(require("./routes/health"));
 const monitoring_1 = __importDefault(require("./routes/monitoring"));
 const logging_2 = require("./middleware/logging");
+const sessionCleanupService_1 = require("./services/sessionCleanupService");
 console.log('Starting backend/src/index.ts');
 console.log('Loaded config:', environment_1.config);
 const app = (0, express_1.default)();
@@ -41,6 +44,8 @@ app.use('/health', health_1.default);
 app.use('/api/monitoring', monitoring_1.default);
 // API routes
 app.use('/api/auth', auth_1.default);
+app.use('/api/sessions', sessions_1.default);
+app.use('/api/users', users_1.default);
 // API documentation route
 app.get('/api', (req, res) => {
     res.json({
@@ -95,7 +100,10 @@ app.use((err, req, res) => {
     }
     return res.status(err.status || 500).json(Object.assign({ success: false, error: err.code || 'SERVER_ERROR', message: isDevelopment ? err.message : 'Internal server error' }, (isDevelopment && { stack: err.stack, details: err })));
 });
+// Start session cleanup service (runs every 24 hours)
+sessionCleanupService_1.sessionCleanupService.start(24);
+logger_1.default.info('Session cleanup service started');
+// Start the server
 app.listen(PORT, () => {
-    logger_1.default.info('Server started on port', PORT);
-    console.log('Server started on port', PORT);
+    logger_1.default.info(`Server running on port ${PORT}`);
 });

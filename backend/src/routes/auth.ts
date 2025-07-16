@@ -2,12 +2,14 @@ import { Router } from 'express';
 import {
   register,
   login,
-  refreshToken,
   verifyEmail,
   requestPasswordReset,
   resetPassword,
-  getProfile
+  getProfile,
+  refreshToken,
+  logout
 } from '../controllers/authController';
+import { refreshTokenWithSession } from '../controllers/sessionController';
 import {
   initiateGoogleOAuth,
   handleGoogleOAuthCallback,
@@ -17,7 +19,7 @@ import {
 import { authenticateToken } from '../middleware/auth';
 
 // Security middleware
-import { authRateLimit, passwordResetRateLimit } from '../middleware/security';
+import { csrfProtection, authRateLimit, passwordResetRateLimit } from '../middleware/security';
 
 // Validation middleware
 import {
@@ -56,6 +58,7 @@ router.post('/register',
 router.post('/login', 
   authRateLimit,
   validateBody(loginSchema),
+  csrfProtection,
   login
 );
 
@@ -68,9 +71,17 @@ router.post('/login',
  */
 router.post('/refresh', 
   authRateLimit,
-  validateBody(refreshTokenSchema),
+  csrfProtection,
   refreshToken
 );
+
+/**
+ * @route   POST /api/auth/logout
+ * @desc    Logout user
+ * @access  Public
+ * @security Requires CSRF token
+ */
+router.post('/logout', csrfProtection, logout);
 
 /**
  * @route   GET /api/auth/verify/:token

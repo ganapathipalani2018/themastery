@@ -12,9 +12,12 @@ import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import authRoutes from './routes/auth';
+import sessionRoutes from './routes/sessions';
+import userRoutes from './routes/users';
 import healthRoutes from './routes/health';
 import monitoringRoutes from './routes/monitoring';
 import { errorLogger } from './middleware/logging';
+import { sessionCleanupService } from './services/sessionCleanupService';
 import { Request, Response } from 'express';
 
 console.log('Starting backend/src/index.ts');
@@ -44,6 +47,8 @@ app.use('/api/monitoring', monitoringRoutes);
 
 // API routes
 app.use('/api/auth', authRoutes);
+app.use('/api/sessions', sessionRoutes);
+app.use('/api/users', userRoutes);
 
 // API documentation route
 app.get('/api', (req, res) => {
@@ -115,7 +120,11 @@ app.use((err: any, req: Request, res: Response) => {
   });
 });
 
+// Start session cleanup service (runs every 24 hours)
+sessionCleanupService.start(24);
+logger.info('Session cleanup service started');
+
+// Start the server
 app.listen(PORT, () => {
-  logger.info('Server started on port', PORT);
-  console.log('Server started on port', PORT);
+  logger.info(`Server running on port ${PORT}`);
 });

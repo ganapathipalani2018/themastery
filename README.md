@@ -90,7 +90,7 @@ resumebuilder/
    make build
    make up
    ```
-   
+
    Or without Make:
    ```bash
    docker-compose build

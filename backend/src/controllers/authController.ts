@@ -3,6 +3,10 @@ import { UserRepository } from '../repositories/UserRepository';
 import { hashPassword, verifyPassword, validatePasswordStrength } from '../utils/password';
 import { generateTokenPair, verifyRefreshToken, generateAccessToken } from '../utils/jwt';
 import crypto from 'crypto';
+import emailService from '../services/emailService';
+import logger from '../config/logger';
+import { SessionRepository } from '../repositories/SessionRepository';
+import { cookieOptions } from '../middleware/security';
 
 const userRepository = new UserRepository();
 
@@ -94,6 +98,21 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       password: '' // This field is required by CreateUserRequest but not used
     });
 
+    // Send verification email
+    try {
+      if (newUser.verification_token) {
+        await emailService.sendVerificationEmail(newUser.email, newUser.verification_token);
+        logger.info('Verification email sent successfully', { userId: newUser.id, email: newUser.email });
+      }
+    } catch (emailError: any) {
+      logger.error('Failed to send verification email', { 
+        userId: newUser.id, 
+        email: newUser.email, 
+        error: emailError.message 
+      });
+      // Don't fail registration if email fails
+    }
+
     // Generate tokens
     const tokens = generateTokenPair(newUser);
 
@@ -128,64 +147,39 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 export const login = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password }: LoginRequest = req.body;
-
-    // Validate required fields
     if (!email || !password) {
-      res.status(400).json({
-        success: false,
-        message: 'Email and password are required',
-        error: 'MISSING_CREDENTIALS'
-      });
+      res.status(400).json({ success: false, message: 'Email and password are required', error: 'MISSING_CREDENTIALS' });
       return;
     }
-
-    // Find user by email
     const user = await userRepository.findByEmail(email.toLowerCase());
     if (!user) {
-      res.status(401).json({
-        success: false,
-        message: 'Invalid credentials',
-        error: 'INVALID_CREDENTIALS'
-      });
+      res.status(401).json({ success: false, message: 'Invalid credentials', error: 'INVALID_CREDENTIALS' });
       return;
     }
-
-    // Verify password
+    if (!user.password_hash) {
+      res.status(401).json({ success: false, message: 'This account uses OAuth login. Please use Google Sign-in.', error: 'OAUTH_ACCOUNT' });
+      return;
+    }
     const isPasswordValid = await verifyPassword(password, user.password_hash);
     if (!isPasswordValid) {
-      res.status(401).json({
-        success: false,
-        message: 'Invalid credentials',
-        error: 'INVALID_CREDENTIALS'
-      });
+      res.status(401).json({ success: false, message: 'Invalid credentials', error: 'INVALID_CREDENTIALS' });
       return;
     }
-
-    // Generate tokens
     const tokens = generateTokenPair(user);
-
-    res.status(200).json({
-      success: true,
-      message: 'Login successful',
-      data: {
-        user: {
-          id: user.id,
-          email: user.email,
-          firstName: user.first_name,
-          lastName: user.last_name,
-          isVerified: user.is_verified
-        },
-        tokens
-      }
+    const sessionRepo = new SessionRepository();
+    await sessionRepo.create({
+      user_id: user.id,
+      session_token: tokens.accessToken,
+      refresh_token_id: tokens.refreshToken,
+      device_info: {},
+      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     });
-
+    res.cookie('access_token', tokens.accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 });
+    res.cookie('refresh_token', tokens.refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 });
+    res.status(200).json({ success: true, message: 'Login successful', data: { user: { id: user.id, email: user.email, firstName: user.first_name, lastName: user.last_name, isVerified: user.is_verified } } });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-      error: 'SERVER_ERROR'
-    });
+    res.status(500).json({ success: false, message: 'Internal server error', error: 'SERVER_ERROR' });
   }
 };
 
@@ -194,49 +188,66 @@ export const login = async (req: Request, res: Response): Promise<void> => {
  */
 export const refreshToken = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { refreshToken }: RefreshTokenRequest = req.body;
-
+    const refreshToken = req.cookies['refresh_token'];
     if (!refreshToken) {
-      res.status(400).json({
-        success: false,
-        message: 'Refresh token is required',
-        error: 'MISSING_REFRESH_TOKEN'
-      });
+      res.status(401).json({ error: 'No refresh token' });
       return;
     }
-
-    // Verify refresh token
-    const decoded = verifyRefreshToken(refreshToken);
-    
-    // Find user
-    const user = await userRepository.findById(decoded.userId);
+    let payload;
+    try {
+      payload = verifyRefreshToken(refreshToken);
+    } catch {
+      res.status(401).json({ error: 'Invalid or expired refresh token' });
+      return;
+    }
+    const sessionRepo = new SessionRepository();
+    const session = await sessionRepo.findByRefreshTokenId(payload.userId.toString());
+    if (!session || session.is_revoked) {
+      res.status(401).json({ error: 'Session revoked or not found' });
+      return;
+    }
+    await sessionRepo.revoke({ session_id: session.id, revoked_by: 'user' });
+    const user = await userRepository.findById(session.user_id);
     if (!user) {
-      res.status(401).json({
-        success: false,
-        message: 'Invalid refresh token',
-        error: 'INVALID_REFRESH_TOKEN'
-      });
+      res.status(404).json({ error: 'User not found' });
       return;
     }
-
-    // Generate new access token
-    const newAccessToken = generateAccessToken(user);
-
-    res.status(200).json({
-      success: true,
-      message: 'Token refreshed successfully',
-      data: {
-        accessToken: newAccessToken
-      }
+    const tokens = generateTokenPair(user);
+    await sessionRepo.create({
+      user_id: Number(user.id),
+      session_token: tokens.accessToken,
+      refresh_token_id: tokens.refreshToken,
+      device_info: {},
+      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     });
-
+    res.cookie('access_token', tokens.accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 });
+    res.cookie('refresh_token', tokens.refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 });
+    res.json({ message: 'Token refreshed' });
   } catch (error) {
-    console.error('Token refresh error:', error);
-    res.status(401).json({
-      success: false,
-      message: 'Invalid or expired refresh token',
-      error: 'INVALID_REFRESH_TOKEN'
-    });
+    console.error('Refresh error:', error);
+    res.status(500).json({ error: 'SERVER_ERROR' });
+  }
+};
+
+/**
+ * Logout user
+ */
+export const logout = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const refreshToken = req.cookies['refresh_token'];
+    if (refreshToken) {
+      try {
+        const payload = verifyRefreshToken(refreshToken);
+        const sessionRepo = new SessionRepository();
+        const session = await sessionRepo.findByRefreshTokenId(payload.userId.toString());
+        if (session) await sessionRepo.revoke({ session_id: session.id, revoked_by: 'user' });
+      } catch {}
+    }
+    res.clearCookie('access_token');
+    res.clearCookie('refresh_token');
+    res.json({ message: 'Logged out' });
+  } catch (error) {
+    res.status(500).json({ error: 'SERVER_ERROR' });
   }
 };
 
@@ -265,6 +276,19 @@ export const verifyEmail = async (req: Request, res: Response): Promise<void> =>
         error: 'INVALID_TOKEN'
       });
       return;
+    }
+
+    // Send welcome email after successful verification
+    try {
+      await emailService.sendWelcomeEmail(user.email, user.first_name);
+      logger.info('Welcome email sent successfully', { userId: user.id, email: user.email });
+    } catch (emailError: any) {
+      logger.error('Failed to send welcome email', { 
+        userId: user.id, 
+        email: user.email, 
+        error: emailError.message 
+      });
+      // Don't fail the verification if email fails
     }
 
     res.status(200).json({
@@ -314,6 +338,21 @@ export const requestPasswordReset = async (req: Request, res: Response): Promise
     // Set reset token (this will succeed even if user doesn't exist for security)
     await userRepository.setResetPasswordToken(email.toLowerCase(), resetToken, resetTokenExpiry);
 
+    // Send password reset email (only if user exists)
+    try {
+      const user = await userRepository.findByEmail(email.toLowerCase());
+      if (user) {
+        await emailService.sendPasswordResetEmail(user.email, resetToken);
+        logger.info('Password reset email sent successfully', { userId: user.id, email: user.email });
+      }
+    } catch (emailError: any) {
+      logger.error('Failed to send password reset email', { 
+        email: email.toLowerCase(), 
+        error: emailError.message 
+      });
+      // Don't fail the request if email fails
+    }
+
     res.status(200).json({
       success: true,
       message: 'If an account with this email exists, a password reset link has been sent'
@@ -360,8 +399,8 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
     // Hash new password
     const hashedPassword = await hashPassword(newPassword);
 
-    // Reset password
-    const user = await userRepository.resetPassword(token, hashedPassword);
+    // Get user by token first for notification
+    const user = await userRepository.findByResetToken(token);
     if (!user) {
       res.status(400).json({
         success: false,
@@ -371,9 +410,41 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
+    // Reset password
+    const resetSuccess = await userRepository.resetPassword(token, hashedPassword);
+    if (!resetSuccess) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid or expired reset token',
+        error: 'INVALID_TOKEN'
+      });
+      return;
+    }
+
+    // Send password changed notification
+    try {
+      await emailService.sendPasswordChangedNotification(user.email, user.first_name);
+      logger.info('Password changed notification sent successfully', { userId: user.id, email: user.email });
+    } catch (emailError: any) {
+      logger.error('Failed to send password changed notification', { 
+        userId: user.id, 
+        email: user.email, 
+        error: emailError.message 
+      });
+      // Don't fail the password reset if email fails
+    }
+
     res.status(200).json({
       success: true,
-      message: 'Password reset successfully'
+      message: 'Password reset successfully',
+      data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.first_name,
+          lastName: user.last_name
+        }
+      }
     });
 
   } catch (error) {

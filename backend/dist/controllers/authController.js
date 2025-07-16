@@ -8,6 +8,8 @@ const UserRepository_1 = require("../repositories/UserRepository");
 const password_1 = require("../utils/password");
 const jwt_1 = require("../utils/jwt");
 const crypto_1 = __importDefault(require("crypto"));
+const emailService_1 = __importDefault(require("../services/emailService"));
+const logger_1 = __importDefault(require("../config/logger"));
 const userRepository = new UserRepository_1.UserRepository();
 /**
  * Register a new user
@@ -65,6 +67,21 @@ const register = async (req, res) => {
             last_name: lastName,
             password: '' // This field is required by CreateUserRequest but not used
         });
+        // Send verification email
+        try {
+            if (newUser.verification_token) {
+                await emailService_1.default.sendVerificationEmail(newUser.email, newUser.verification_token);
+                logger_1.default.info('Verification email sent successfully', { userId: newUser.id, email: newUser.email });
+            }
+        }
+        catch (emailError) {
+            logger_1.default.error('Failed to send verification email', {
+                userId: newUser.id,
+                email: newUser.email,
+                error: emailError.message
+            });
+            // Don't fail registration if email fails
+        }
         // Generate tokens
         const tokens = (0, jwt_1.generateTokenPair)(newUser);
         res.status(201).json({
@@ -114,6 +131,15 @@ const login = async (req, res) => {
                 success: false,
                 message: 'Invalid credentials',
                 error: 'INVALID_CREDENTIALS'
+            });
+            return;
+        }
+        // Check if user has a password (OAuth users don't have passwords)
+        if (!user.password_hash) {
+            res.status(401).json({
+                success: false,
+                message: 'This account uses OAuth login. Please use Google Sign-in.',
+                error: 'OAUTH_ACCOUNT'
             });
             return;
         }
@@ -224,6 +250,19 @@ const verifyEmail = async (req, res) => {
             });
             return;
         }
+        // Send welcome email after successful verification
+        try {
+            await emailService_1.default.sendWelcomeEmail(user.email, user.first_name);
+            logger_1.default.info('Welcome email sent successfully', { userId: user.id, email: user.email });
+        }
+        catch (emailError) {
+            logger_1.default.error('Failed to send welcome email', {
+                userId: user.id,
+                email: user.email,
+                error: emailError.message
+            });
+            // Don't fail the verification if email fails
+        }
         res.status(200).json({
             success: true,
             message: 'Email verified successfully',
@@ -267,6 +306,21 @@ const requestPasswordReset = async (req, res) => {
         const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour
         // Set reset token (this will succeed even if user doesn't exist for security)
         await userRepository.setResetPasswordToken(email.toLowerCase(), resetToken, resetTokenExpiry);
+        // Send password reset email (only if user exists)
+        try {
+            const user = await userRepository.findByEmail(email.toLowerCase());
+            if (user) {
+                await emailService_1.default.sendPasswordResetEmail(user.email, resetToken);
+                logger_1.default.info('Password reset email sent successfully', { userId: user.id, email: user.email });
+            }
+        }
+        catch (emailError) {
+            logger_1.default.error('Failed to send password reset email', {
+                email: email.toLowerCase(),
+                error: emailError.message
+            });
+            // Don't fail the request if email fails
+        }
         res.status(200).json({
             success: true,
             message: 'If an account with this email exists, a password reset link has been sent'
@@ -309,8 +363,8 @@ const resetPassword = async (req, res) => {
         }
         // Hash new password
         const hashedPassword = await (0, password_1.hashPassword)(newPassword);
-        // Reset password
-        const user = await userRepository.resetPassword(token, hashedPassword);
+        // Get user by token first for notification
+        const user = await userRepository.findByResetToken(token);
         if (!user) {
             res.status(400).json({
                 success: false,
@@ -319,9 +373,40 @@ const resetPassword = async (req, res) => {
             });
             return;
         }
+        // Reset password
+        const resetSuccess = await userRepository.resetPassword(token, hashedPassword);
+        if (!resetSuccess) {
+            res.status(400).json({
+                success: false,
+                message: 'Invalid or expired reset token',
+                error: 'INVALID_TOKEN'
+            });
+            return;
+        }
+        // Send password changed notification
+        try {
+            await emailService_1.default.sendPasswordChangedNotification(user.email, user.first_name);
+            logger_1.default.info('Password changed notification sent successfully', { userId: user.id, email: user.email });
+        }
+        catch (emailError) {
+            logger_1.default.error('Failed to send password changed notification', {
+                userId: user.id,
+                email: user.email,
+                error: emailError.message
+            });
+            // Don't fail the password reset if email fails
+        }
         res.status(200).json({
             success: true,
-            message: 'Password reset successfully'
+            message: 'Password reset successfully',
+            data: {
+                user: {
+                    id: user.id,
+                    email: user.email,
+                    firstName: user.first_name,
+                    lastName: user.last_name
+                }
+            }
         });
     }
     catch (error) {

@@ -2,6 +2,8 @@ import rateLimit from 'express-rate-limit';
 import slowDown from 'express-slow-down';
 import mongoSanitize from 'express-mongo-sanitize';
 import hpp from 'hpp';
+// @ts-ignore
+import csurf from 'csurf';
 import { Request, Response, NextFunction } from 'express';
 
 // Environment-based configuration
@@ -276,6 +278,15 @@ export const xssProtection = (req: Request, res: Response, next: NextFunction) =
 
   next();
 };
+
+// CSRF Protection Middleware
+export const csrfProtection = csurf({
+  cookie: {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: 'strict',
+  }
+});
 
 // Trust proxy configuration for accurate IP addresses
 export const trustProxyConfig = (app: any) => {

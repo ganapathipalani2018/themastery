@@ -55,12 +55,17 @@ const envSchema = z.object({
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('info'),
   LOG_FILE: z.string().optional(),
   
-  // Email (for future implementation)
+  // Email Configuration
   EMAIL_HOST: z.string().optional(),
   EMAIL_PORT: z.string().transform(Number).optional(),
   EMAIL_USER: z.string().optional(),
   EMAIL_PASSWORD: z.string().optional(),
   EMAIL_FROM: z.string().optional(),
+  
+  // SendGrid Configuration
+  SENDGRID_API_KEY: z.string().optional(),
+  DEFAULT_EMAIL_SENDER: z.string().optional(),
+  FRONTEND_URL: z.string().default('http://localhost:3000'),
   
   // Google OAuth Configuration
   GOOGLE_CLIENT_ID: z.string().optional(),
@@ -150,6 +155,18 @@ export const googleOAuthConfig = {
   clientId: config.GOOGLE_CLIENT_ID,
   clientSecret: config.GOOGLE_CLIENT_SECRET,
   redirectUri: config.GOOGLE_REDIRECT_URI,
+};
+
+// Email configuration
+export const emailConfig = {
+  sendgridApiKey: config.SENDGRID_API_KEY,
+  defaultSender: config.DEFAULT_EMAIL_SENDER,
+  frontendUrl: config.FRONTEND_URL,
+  host: config.EMAIL_HOST,
+  port: config.EMAIL_PORT,
+  user: config.EMAIL_USER,
+  password: config.EMAIL_PASSWORD,
+  from: config.EMAIL_FROM,
 };
 
 // Feature flags

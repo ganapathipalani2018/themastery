@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.loggingConfig = exports.features = exports.rateLimitConfig = exports.securityConfig = exports.jwtConfig = exports.dbConfig = exports.isProduction = exports.isStaging = exports.isDevelopment = exports.config = void 0;
+exports.loggingConfig = exports.features = exports.emailConfig = exports.googleOAuthConfig = exports.rateLimitConfig = exports.securityConfig = exports.jwtConfig = exports.dbConfig = exports.isProduction = exports.isStaging = exports.isDevelopment = exports.config = void 0;
 exports.getEnvironmentInfo = getEnvironmentInfo;
 exports.validateProductionSecrets = validateProductionSecrets;
 const dotenv_1 = __importDefault(require("dotenv"));
@@ -52,12 +52,20 @@ const envSchema = zod_1.z.object({
     // Logging
     LOG_LEVEL: zod_1.z.enum(['error', 'warn', 'info', 'debug']).default('info'),
     LOG_FILE: zod_1.z.string().optional(),
-    // Email (for future implementation)
+    // Email Configuration
     EMAIL_HOST: zod_1.z.string().optional(),
     EMAIL_PORT: zod_1.z.string().transform(Number).optional(),
     EMAIL_USER: zod_1.z.string().optional(),
     EMAIL_PASSWORD: zod_1.z.string().optional(),
     EMAIL_FROM: zod_1.z.string().optional(),
+    // SendGrid Configuration
+    SENDGRID_API_KEY: zod_1.z.string().optional(),
+    DEFAULT_EMAIL_SENDER: zod_1.z.string().optional(),
+    FRONTEND_URL: zod_1.z.string().default('http://localhost:3000'),
+    // Google OAuth Configuration
+    GOOGLE_CLIENT_ID: zod_1.z.string().optional(),
+    GOOGLE_CLIENT_SECRET: zod_1.z.string().optional(),
+    GOOGLE_REDIRECT_URI: zod_1.z.string().optional(),
     // File Upload
     MAX_FILE_SIZE: zod_1.z.string().transform(Number).default(5242880), // 5MB
     UPLOAD_DIR: zod_1.z.string().default('./uploads'),
@@ -126,6 +134,23 @@ exports.rateLimitConfig = {
     maxRequests: exports.config.RATE_LIMIT_MAX_REQUESTS,
     authMaxRequests: exports.config.AUTH_RATE_LIMIT_MAX_REQUESTS,
     passwordResetMaxRequests: exports.config.PASSWORD_RESET_RATE_LIMIT_MAX_REQUESTS,
+};
+// Google OAuth configuration
+exports.googleOAuthConfig = {
+    clientId: exports.config.GOOGLE_CLIENT_ID,
+    clientSecret: exports.config.GOOGLE_CLIENT_SECRET,
+    redirectUri: exports.config.GOOGLE_REDIRECT_URI,
+};
+// Email configuration
+exports.emailConfig = {
+    sendgridApiKey: exports.config.SENDGRID_API_KEY,
+    defaultSender: exports.config.DEFAULT_EMAIL_SENDER,
+    frontendUrl: exports.config.FRONTEND_URL,
+    host: exports.config.EMAIL_HOST,
+    port: exports.config.EMAIL_PORT,
+    user: exports.config.EMAIL_USER,
+    password: exports.config.EMAIL_PASSWORD,
+    from: exports.config.EMAIL_FROM,
 };
 // Feature flags
 exports.features = {

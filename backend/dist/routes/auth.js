@@ -2,6 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const authController_1 = require("../controllers/authController");
+const sessionController_1 = require("../controllers/sessionController");
+const oauthController_1 = require("../controllers/oauthController");
 const auth_1 = require("../middleware/auth");
 // Security middleware
 const security_1 = require("../middleware/security");
@@ -31,7 +33,7 @@ router.post('/login', security_1.authRateLimit, (0, validation_1.validateBody)(v
  * @security Rate limited to 5 requests per 15 minutes
  * @validation Body validated against refreshTokenSchema
  */
-router.post('/refresh', security_1.authRateLimit, (0, validation_1.validateBody)(validation_1.refreshTokenSchema), authController_1.refreshToken);
+router.post('/refresh', security_1.authRateLimit, (0, validation_1.validateBody)(validation_1.refreshTokenSchema), sessionController_1.refreshTokenWithSession);
 /**
  * @route   GET /api/auth/verify/:token
  * @desc    Verify user email
@@ -63,4 +65,33 @@ router.post('/reset-password', security_1.passwordResetRateLimit, (0, validation
  * @security Requires valid JWT token
  */
 router.get('/profile', auth_1.authenticateToken, authController_1.getProfile);
+/**
+ * @route   GET /api/auth/oauth/google
+ * @desc    Initiate Google OAuth flow
+ * @access  Public
+ * @security Rate limited to 5 requests per 15 minutes
+ */
+router.get('/oauth/google', security_1.authRateLimit, oauthController_1.initiateGoogleOAuth);
+/**
+ * @route   GET /api/auth/oauth/google/callback
+ * @desc    Handle Google OAuth callback
+ * @access  Public
+ * @security Rate limited to 5 requests per 15 minutes
+ */
+router.get('/oauth/google/callback', security_1.authRateLimit, oauthController_1.handleGoogleOAuthCallback);
+/**
+ * @route   POST /api/auth/link-google
+ * @desc    Link Google account to existing user
+ * @access  Public
+ * @security Rate limited to 5 requests per 15 minutes
+ * @validation Body validated against linkGoogleAccountSchema
+ */
+router.post('/link-google', security_1.authRateLimit, oauthController_1.linkGoogleAccount);
+/**
+ * @route   DELETE /api/auth/unlink-google
+ * @desc    Unlink Google account from user
+ * @access  Private
+ * @security Requires valid JWT token
+ */
+router.delete('/unlink-google', auth_1.authenticateToken, oauthController_1.unlinkGoogleAccount);
 exports.default = router;
