@@ -18,10 +18,11 @@ services:
       - /app/node_modules
       - /app/.next
     command: npm run dev
+    user: root
 
   postgres:
-    ports:
-      - "5433:5432"
+    # ports:
+    #   - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./database.sql:/docker-entrypoint-initdb.d/init.sql
