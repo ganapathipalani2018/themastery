@@ -49,10 +49,11 @@ jobs:
           args: --severity-threshold=high
           
       - name: Upload Snyk results to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
           sarif_file: snyk.sarif
+          category: snyk-security
           
   dependency-check:
     name: Dependency Check
@@ -100,15 +101,15 @@ jobs:
         uses: actions/checkout@v4
         
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
+        uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
           
       - name: Autobuild
-        uses: github/codeql-action/autobuild@v2
+        uses: github/codeql-action/autobuild@v3
         
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
+        uses: github/codeql-action/analyze@v3
         
   docker-security:
     name: Docker Security Scan
@@ -137,14 +138,15 @@ jobs:
           format: 'sarif'
           output: 'trivy-backend.sarif'
           
-      - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v2
+      - name: Upload Trivy scan results to GitHub Security tab (Frontend)
+        uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
           sarif_file: 'trivy-frontend.sarif'
-          
-      - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v2
+          category: trivy-frontend
+      - name: Upload Trivy scan results to GitHub Security tab (Backend)
+        uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
-          sarif_file: 'trivy-backend.sarif' 
+          sarif_file: 'trivy-backend.sarif'
+          category: trivy-backend 

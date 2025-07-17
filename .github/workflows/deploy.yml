@@ -36,13 +36,13 @@ jobs:
           cache: 'npm'
           
       - name: Download frontend artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: frontend-build
           path: .next/
           
       - name: Download backend artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: backend-build
           path: backend/dist/
@@ -94,13 +94,13 @@ jobs:
           cache: 'npm'
           
       - name: Download frontend artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: frontend-build
           path: .next/
           
       - name: Download backend artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: backend-build
           path: backend/dist/
